@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Планер · по циклу</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F0EBE4;--paper:#FDFAF6;--ink:#1A1612;--muted:#9A8F82;--line:#DDD5C8;
+  --mens-bg:#FAE8EB;--mens:#A63D48;
+  --foll-bg:#E2EDF7;--foll:#2A6B96;
+  --ovul-bg:#FEF4DC;--ovul:#B8870E;
+  --lut-bg:#E2F1EB;--lut:#2A7A4E;
+  --photo:#2A6B96;--book:#7A4AD9;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);font-family:'Jost',sans-serif;color:var(--ink);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:var(--ink);color:var(--paper);height:52px;display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:200;}
+.logo{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:300;letter-spacing:.08em;flex-shrink:0;}
+.vtog{display:flex;gap:2px;background:rgba(255,255,255,.08);border-radius:3px;padding:3px;flex-shrink:0;}
+.vbtn{padding:5px 11px;font-family:'Jost',sans-serif;font-size:.57rem;letter-spacing:.15em;text-transform:uppercase;border:none;background:transparent;color:#7A7068;cursor:pointer;border-radius:2px;transition:all .15s;}
+.vbtn.active{background:var(--paper);color:var(--ink);}
+.nav-btns{display:flex;gap:3px;flex-shrink:0;}
+.nbtn{background:none;border:1px solid rgba(255,255,255,.15);color:var(--paper);cursor:pointer;border-radius:2px;padding:4px 10px;font-size:.8rem;}
+.nbtn:hover{background:rgba(255,255,255,.1);}
+.plbl{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-weight:300;color:rgba(255,255,255,.6);white-space:nowrap;}
+.tbar-r{margin-left:auto;display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.save-indicator{display:flex;align-items:center;gap:5px;}
+.save-dot{width:6px;height:6px;border-radius:50%;background:#4CAF7D;transition:background .4s;}
+.save-dot.dirty{background:#B8870E;}
+.save-lbl{font-size:.5rem;color:rgba(255,255,255,.35);white-space:nowrap;}
+.tbtn{padding:5px 11px;background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--paper);font-family:'Jost',sans-serif;font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;transition:all .15s;}
+.tbtn:hover{background:rgba(255,255,255,.08);}
+.tbtn.bkp{border-color:rgba(76,175,125,.5);color:#7AE0A0;}
+.buf-badge{background:#B8870E;color:#fff;border-radius:10px;padding:1px 5px;font-size:.5rem;margin-left:2px;}
+
+/* BALBAR */
+.balbar{background:var(--paper);border-bottom:1px solid var(--line);padding:5px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.bal-lbl{font-size:.52rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
+.bal-track{display:flex;align-items:center;gap:7px;}
+.bal-item{display:flex;align-items:center;gap:4px;font-size:.58rem;}
+.bal-dot{width:7px;height:7px;border-radius:50%;}
+.bal-n{font-weight:500;}
+.bal-bar{width:90px;height:4px;background:var(--line);border-radius:3px;overflow:hidden;}
+.bal-fill{height:100%;border-radius:3px;transition:width .4s;}
+.leg-r{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:auto;}
+.li{display:flex;align-items:center;gap:4px;font-size:.5rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.ld{width:6px;height:6px;border-radius:50%;}
+
+/* MAIN */
+.main{padding:16px 20px 60px;}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.dow-cell{text-align:center;font-size:.52rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);padding-bottom:3px;}
+.mgrid{display:flex;flex-direction:column;gap:3px;}
+.wrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+
+/* DAY */
+.day{background:var(--paper);border-radius:4px;min-height:140px;padding:8px 7px 6px 10px;border:1px solid transparent;position:relative;transition:border-color .15s, box-shadow .15s;}
+.day:hover{border-color:var(--line);}
+.day.empty{background:transparent;border:none;pointer-events:none;}
+.day.today{border-color:var(--ink)!important;box-shadow:0 2px 12px rgba(26,22,18,.15);}
+.day.dov{border-color:#4A90D9!important;background:rgba(74,144,217,.05);}
+.day.main-done{box-shadow:inset 0 0 0 1.5px rgba(42,122,78,.3);}
+.day::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:2px 0 0 2px;}
+.day.phase-mens{background:var(--mens-bg);}.day.phase-mens::before{background:var(--mens);}
+.day.phase-foll{background:var(--foll-bg);}.day.phase-foll::before{background:var(--foll);}
+.day.phase-ovul{background:var(--ovul-bg);}.day.phase-ovul::before{background:var(--ovul);}
+.day.phase-lut {background:var(--lut-bg); }.day.phase-lut::before {background:var(--lut);}
+
+.dtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:3px;}
+.dnum{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;line-height:1;}
+.dcd{font-size:.43rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+
+/* MAIN TASK */
+.main-inp{width:100%;border:none;border-bottom:1px dashed rgba(0,0,0,.12);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.82rem;font-style:italic;color:var(--ink);outline:none;padding:1px 0 2px;margin-bottom:4px;transition:border-color .2s;}
+.main-inp:focus{border-bottom-color:rgba(0,0,0,.3);}
+.main-inp::placeholder{color:var(--muted);font-size:.72rem;}
+.main-inp.mk{text-decoration:line-through;opacity:.4;}
+
+.dtasks{display:flex;flex-direction:column;gap:2px;}
+.addbtn{font-size:.5rem;color:var(--muted);cursor:pointer;padding:1px 0;margin-top:2px;opacity:0;transition:opacity .15s;background:none;border:none;font-family:'Jost';letter-spacing:.08em;text-align:left;}
+.day:hover .addbtn{opacity:.55;}
+.addbtn:hover{opacity:1!important;}
+
+/* TASK CHIP */
+.tc{border-radius:2px;border:1px solid transparent;transition:border-color .15s;cursor:grab;margin-bottom:1px;}
+.tc:active{cursor:grabbing;opacity:.7;}
+.tc.dragging{opacity:.3;}
+.tc:hover{border-color:rgba(0,0,0,.1);}
+.tc-head{display:flex;align-items:center;gap:5px;padding:5px 7px;}
+.tc-chk{width:13px;height:13px;cursor:pointer;flex-shrink:0;accent-color:currentColor;}
+.proj-tag{font-size:.48rem;padding:1px 4px;border-radius:2px;cursor:pointer;flex-shrink:0;font-weight:600;transition:all .15s;border:1px solid transparent;user-select:none;line-height:1.5;}
+.proj-tag.none{color:var(--muted);border-color:var(--line);}
+.proj-tag.photo{color:var(--photo);border-color:var(--photo);background:rgba(42,107,150,.1);}
+.proj-tag.book{color:var(--book);border-color:var(--book);background:rgba(122,74,217,.1);}
+.tc-lbl{flex:1;font-size:.65rem;line-height:1.3;word-break:break-word;}
+.tc-lbl.sk{text-decoration:line-through;opacity:.35;}
+.tc-lbl-inp{flex:1;font-size:.58rem;line-height:1.2;border:none;background:transparent;font-family:'Jost',sans-serif;color:var(--ink);outline:none;border-bottom:1px solid rgba(0,0,0,.25);padding:0;min-width:0;}
+.sub-ind{font-size:.47rem;color:var(--muted);flex-shrink:0;white-space:nowrap;padding:0 1px;}
+.sub-ind.has{color:var(--lut);}
+.tc-exp{font-size:.55rem;opacity:.28;cursor:pointer;border:none;background:none;color:inherit;padding:0 1px;flex-shrink:0;transition:transform .15s,opacity .15s;line-height:1;}
+.tc-exp:hover{opacity:.8;}
+.tc-exp.open{transform:rotate(180deg);opacity:.6;}
+.tc-del{font-size:.5rem;opacity:0;cursor:pointer;border:none;background:none;color:inherit;padding:0 2px;flex-shrink:0;line-height:1;}
+.tc:hover .tc-del{opacity:.28;}
+.tc:hover .tc-del:hover{opacity:1;}
+
+/* CHIP BODY */
+.tc-body{display:none;padding:0 5px 5px 14px;flex-direction:column;gap:3px;}
+.tc-body.open{display:flex;}
+.tc-note{width:100%;border:none;border-bottom:1px solid rgba(0,0,0,.1);background:transparent;font-family:'Jost',sans-serif;font-size:.57rem;color:var(--ink);outline:none;padding:2px 0;resize:none;line-height:1.4;min-height:16px;overflow:hidden;}
+.tc-note:focus{border-bottom-color:rgba(0,0,0,.28);}
+.tc-note::placeholder{color:var(--muted);font-style:italic;}
+.subs{display:flex;flex-direction:column;gap:2px;margin-top:1px;}
+.sub-row{display:flex;align-items:center;gap:3px;}
+.s-chk{width:9px;height:9px;cursor:pointer;flex-shrink:0;accent-color:var(--muted);}
+.s-inp{flex:1;border:none;border-bottom:1px solid rgba(0,0,0,.07);background:transparent;font-family:'Jost',sans-serif;font-size:.56rem;color:var(--ink);outline:none;padding:1px 0;}
+.s-inp:focus{border-bottom-color:rgba(0,0,0,.22);}
+.s-inp::placeholder{color:var(--muted);font-style:italic;}
+.s-inp.sk{text-decoration:line-through;opacity:.38;}
+.s-del{font-size:.48rem;opacity:0;cursor:pointer;border:none;background:none;color:var(--muted);padding:0 1px;flex-shrink:0;}
+.sub-row:hover .s-del{opacity:.35;}
+.s-del:hover{opacity:1!important;}
+.addsub{font-size:.5rem;color:var(--muted);cursor:pointer;border:none;background:none;font-family:'Jost';padding:1px 0;opacity:.45;text-align:left;}
+.addsub:hover{opacity:1;}
+.tobuf{font-size:.5rem;color:#B8870E;cursor:pointer;border:none;background:none;font-family:'Jost';padding:1px 0;opacity:.65;text-align:left;text-decoration:underline;}
+.tobuf:hover{opacity:1;}
+
+/* COLORS */
+.c-yoga{background:rgba(217,168,74,.13);color:#7A5000;border-color:rgba(217,168,74,.2);}
+.c-move{background:rgba(74,144,217,.13);color:#1A4A80;border-color:rgba(74,144,217,.2);}
+.c-content{background:rgba(224,123,58,.13);color:#7A3A00;border-color:rgba(224,123,58,.2);}
+.c-book{background:rgba(122,74,217,.13);color:#3A1A80;border-color:rgba(122,74,217,.2);}
+.c-promo{background:rgba(42,154,122,.13);color:#0A5A3A;border-color:rgba(42,154,122,.2);}
+.c-meet{background:rgba(192,74,122,.13);color:#6A1A3A;border-color:rgba(192,74,122,.2);}
+.c-date{background:rgba(217,74,122,.12);color:#7A2050;border-color:rgba(217,74,122,.2);}
+.c-rest{background:rgba(154,154,154,.13);color:#4A4A4A;border-color:rgba(154,154,154,.2);}
+.c-plan{background:rgba(74,180,130,.13);color:#0A5A30;border-color:rgba(74,180,130,.2);}
+.c-subst{background:rgba(74,122,217,.13);color:#1A2A80;border-color:rgba(74,122,217,.2);}
+.c-tg{background:rgba(42,154,217,.13);color:#0A4A70;border-color:rgba(42,154,217,.2);}
+.c-insta{background:rgba(200,42,122,.13);color:#6A0A40;border-color:rgba(200,42,122,.2);}
+.c-admin{background:rgba(120,80,40,.13);color:#5A3A10;border-color:rgba(120,80,40,.2);}
+.c-retro{background:rgba(80,120,80,.13);color:#2A4A2A;border-color:rgba(80,120,80,.2);}
+.c-home{background:rgba(160,100,160,.13);color:#5A2A5A;border-color:rgba(160,100,160,.2);}
+.c-kids{background:rgba(255,140,60,.13);color:#8A4A00;border-color:rgba(255,140,60,.2);}
+.c-friends{background:rgba(60,180,200,.13);color:#0A5A6A;border-color:rgba(60,180,200,.2);}
+.c-family{background:rgba(220,100,100,.13);color:#7A2020;border-color:rgba(220,100,100,.2);}
+.c-social{background:rgba(100,180,100,.13);color:#1A5A1A;border-color:rgba(100,180,100,.2);}
+.c-custom{background:rgba(100,100,100,.1);color:#3A3A3A;border-color:rgba(100,100,100,.18);}
+
+
+/* DAY ROLE LABEL */
+.day-role{font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;display:block;}
+.day-role.role-book{color:var(--book);}
+.day-role.role-photo{color:var(--photo);}
+.day-role.role-content{color:#B8870E;}
+.day-role.role-open{color:#2A7A4E;}
+.day-role.role-admin{color:#5A3A10;}
+.day-role.role-rest{color:#4A4A4A;}
+
+/* PROGRESS BAR */
+.day-prog{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(0,0,0,.06);border-radius:0 0 4px 4px;overflow:hidden;}
+.day-prog-fill{height:100%;background:var(--lut);border-radius:0 0 4px 4px;transition:width .4s;}
+
+/* ADD BUTTON nicer */
+.addbtn{font-size:.52rem;color:var(--muted);cursor:pointer;padding:2px 4px;margin-top:3px;opacity:0;transition:opacity .15s;background:none;border:1px dashed transparent;border-radius:2px;font-family:'Jost';letter-spacing:.08em;text-align:left;}
+.day:hover .addbtn{opacity:.6;border-color:var(--line);}
+.addbtn:hover{opacity:1!important;border-color:var(--muted)!important;}
+
+/* WEEK */
+.week-view{display:none;}
+.week-view.active{display:block;}
+.month-view.hidden{display:none;}
+.wgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.wh{background:var(--paper);border-radius:2px;padding:7px 9px 5px 10px;border-left:3px solid transparent;margin-bottom:3px;}
+.wh.phase-mens{background:var(--mens-bg);border-left-color:var(--mens);}
+.wh.phase-foll{background:var(--foll-bg);border-left-color:var(--foll);}
+.wh.phase-ovul{background:var(--ovul-bg);border-left-color:var(--ovul);}
+.wh.phase-lut {background:var(--lut-bg); border-left-color:var(--lut);}
+.wh.today{outline:1.5px solid var(--ink);}
+.wh-dow{font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+.wh-num{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:300;line-height:1;margin:1px 0;}
+.wh-cd{font-size:.44rem;color:var(--muted);}
+.wcol{display:flex;flex-direction:column;gap:3px;}
+.wtasks{background:var(--paper);border-radius:2px;padding:6px 5px;min-height:150px;display:flex;flex-direction:column;gap:2px;border:1px solid transparent;transition:border-color .15s;}
+.wtasks:hover{border-color:var(--line);}
+.wtasks.dov{border-color:#4A90D9;background:rgba(74,144,217,.05);}
+
+/* BUFFER */
+.buffer-view{display:none;}
+.buffer-view.active{display:block;}
+.buf-h{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;margin-bottom:4px;}
+.buf-sub{font-size:.6rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.buf-list{display:flex;flex-direction:column;gap:4px;max-width:520px;}
+.buf-empty{font-size:.72rem;color:var(--muted);font-style:italic;}
+.buf-item{display:flex;align-items:center;gap:8px;background:var(--paper);border-radius:2px;padding:8px 10px;border:1px solid var(--line);}
+.buf-proj{font-size:.55rem;flex-shrink:0;}
+.buf-lbl{flex:1;font-size:.7rem;}
+.buf-from{font-size:.55rem;color:var(--muted);white-space:nowrap;}
+.buf-assign{font-size:.57rem;color:var(--foll);cursor:pointer;border:none;background:none;font-family:'Jost';text-decoration:underline;padding:0;white-space:nowrap;}
+.buf-del{font-size:.58rem;opacity:.3;cursor:pointer;border:none;background:none;color:var(--ink);}
+.buf-del:hover{opacity:1;}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(26,22,18,.52);z-index:300;display:none;align-items:center;justify-content:center;padding:14px;}
+.ov.open{display:flex;}
+.modal{background:var(--paper);border-radius:3px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;animation:su .2s ease;}
+@keyframes su{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mhead{padding:14px 18px 11px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;position:sticky;top:0;background:var(--paper);z-index:1;}
+.mtitle{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:300;}
+.msub{font-size:.53rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.mx{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 0 0 10px;}
+.mbody{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.ml{font-size:.54rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{padding:4px 10px;border-radius:20px;font-size:.61rem;cursor:pointer;border:1px solid var(--line);background:var(--paper);transition:all .15s;user-select:none;white-space:nowrap;}
+.chip:hover{border-color:var(--ink);}
+.chip.sel{font-weight:500;border-color:currentColor;}
+.chip.sel.c-yoga{background:rgba(217,168,74,.2);color:#7A5000;}
+.chip.sel.c-move{background:rgba(74,144,217,.2);color:#1A4A80;}
+.chip.sel.c-content{background:rgba(224,123,58,.2);color:#7A3A00;}
+.chip.sel.c-book{background:rgba(122,74,217,.2);color:#3A1A80;}
+.chip.sel.c-promo{background:rgba(42,154,122,.2);color:#0A5A3A;}
+.chip.sel.c-meet{background:rgba(192,74,122,.2);color:#6A1A3A;}
+.chip.sel.c-date{background:rgba(217,74,122,.18);color:#7A2050;}
+.chip.sel.c-rest{background:rgba(154,154,154,.2);color:#4A4A4A;}
+.chip.sel.c-plan{background:rgba(74,180,130,.2);color:#0A5A30;}
+.chip.sel.c-subst{background:rgba(74,122,217,.2);color:#1A2A80;}
+.chip.sel.c-tg{background:rgba(42,154,217,.2);color:#0A4A70;}
+.chip.sel.c-insta{background:rgba(200,42,122,.2);color:#6A0A40;}
+.chip.sel.c-admin{background:rgba(120,80,40,.2);color:#5A3A10;}
+.chip.sel.c-retro{background:rgba(80,120,80,.2);color:#2A4A2A;}
+.chip.sel.c-home{background:rgba(160,100,160,.2);color:#5A2A5A;}
+.chip.sel.c-kids{background:rgba(255,140,60,.2);color:#8A4A00;}
+.chip.sel.c-friends{background:rgba(60,180,200,.2);color:#0A5A6A;}
+.chip.sel.c-family{background:rgba(220,100,100,.2);color:#7A2020;}
+.chip.sel.c-social{background:rgba(100,180,100,.2);color:#1A5A1A;}
+.cinp{width:100%;border:none;border-bottom:1px solid var(--line);background:transparent;padding:5px 0;font-family:'Jost';font-size:.78rem;color:var(--ink);outline:none;}
+.cinp:focus{border-color:var(--ink);}
+.cinp::placeholder{color:var(--muted);font-size:.68rem;}
+.hint{background:var(--bg);border-left:2px solid var(--line);padding:6px 11px;font-size:.6rem;color:var(--muted);line-height:1.5;font-style:italic;border-radius:0 2px 2px 0;}
+.mfoot{padding:9px 18px 14px;display:flex;justify-content:flex-end;gap:7px;position:sticky;bottom:0;background:var(--paper);}
+.bsec{padding:7px 14px;background:transparent;border:1px solid var(--line);color:var(--muted);font-family:'Jost';font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:2px;}
+.bpri{padding:7px 18px;background:var(--ink);border:1px solid var(--ink);color:var(--paper);font-family:'Jost';font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:2px;}
+.bpri:hover{background:#3A3530;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 18px;border-radius:2px;font-size:.63rem;letter-spacing:.08em;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+@media print{
+  .topbar,.balbar,.ov,.toast{display:none!important;}
+  body{background:white;}.main{padding:6px;}
+  .day{min-height:80px;}.tc-body.open{display:flex;}
+}
+@media(max-width:700px){
+  .main{padding:8px 7px 40px;}.topbar{padding:0 8px;gap:5px;}
+  .logo{display:none;}.day{min-height:90px;padding:5px 4px 3px 6px;}
+  .dnum{font-size:1rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Планер · по циклу</div>
+  <div class="vtog">
+    <button class="vbtn active" id="vb-month"  onclick="setView('month')">Месяц</button>
+    <button class="vbtn"        id="vb-week"   onclick="setView('week')">Неделя</button>
+    <button class="vbtn"        id="vb-buffer" onclick="setView('buffer')">Буфер<span class="buf-badge" id="buf-cnt">0</span></button>
+  </div>
+  <div class="nav-btns">
+    <button class="nbtn" onclick="nav(-1)">‹</button>
+    <button class="nbtn" onclick="nav(1)">›</button>
+  </div>
+  <div class="plbl" id="plbl">Апрель 2026</div>
+  <div class="tbar-r">
+    <div class="save-indicator">
+      <div class="save-dot" id="save-dot"></div>
+      <span class="save-lbl" id="save-lbl">сохранено</span>
+    </div>
+    <button class="tbtn bkp" onclick="exportBackup()">↓ Резервная копия</button>
+    <button class="tbtn bkp" onclick="document.getElementById('file-inp').click()">↑ Загрузить копию</button>
+    <input type="file" id="file-inp" accept=".json" style="display:none" onchange="importBackup(event)">
+    <button class="tbtn" onclick="window.print()">Печать</button>
+  </div>
+</div>
+
+<div class="balbar">
+  <span class="bal-lbl">Баланс:</span>
+  <div class="bal-track">
+    <div class="bal-item"><div class="bal-dot" style="background:var(--photo)"></div><span class="bal-n" id="bal-p">0</span>&nbsp;📷</div>
+    <div class="bal-bar"><div class="bal-fill" id="bal-fill" style="background:var(--photo);width:50%"></div></div>
+    <div class="bal-item"><div class="bal-dot" style="background:var(--book)"></div><span class="bal-n" id="bal-b">0</span>&nbsp;📖</div>
+  </div>
+  <div class="leg-r">
+    <div class="li"><div class="ld" style="background:var(--mens)"></div>Менстр.</div>
+    <div class="li"><div class="ld" style="background:var(--foll)"></div>Фолл.</div>
+    <div class="li"><div class="ld" style="background:var(--ovul)"></div>Овул.</div>
+    <div class="li"><div class="ld" style="background:var(--lut)"></div>Лютеин.</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- MONTH -->
+  <div class="month-view" id="mv">
+    <div class="dow-row">
+      <div class="dow-cell">Вс</div><div class="dow-cell">Пн</div><div class="dow-cell">Вт</div>
+      <div class="dow-cell">Ср</div><div class="dow-cell">Чт</div><div class="dow-cell">Пт</div>
+      <div class="dow-cell">Сб</div>
+    </div>
+    <div class="mgrid" id="mgrid"></div>
+  </div>
+  <!-- WEEK -->
+  <div class="week-view" id="wv"></div>
+  <!-- BUFFER -->
+  <div class="buffer-view" id="bfv">
+    <div class="buf-h">Буфер</div>
+    <div class="buf-sub">Задачи которые не успела.<br>Нажми "→ в день" чтобы перенести.</div>
+    <div class="buf-list" id="buf-list"></div>
+  </div>
+</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle" id="mt"></div><div class="msub" id="ms"></div></div>
+      <button class="mx" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody" id="mb"></div>
+    <div class="mfoot">
+      <button class="bsec" onclick="closeModal()">Отмена</button>
+      <button class="bpri" onclick="saveModal()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const CS = new Date('2026-04-30T00:00:00');
+const CL = 28;
+const STORAGE_KEY = 'planner_cycle_v1';
+const MN = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const PN = {mens:'🌸 Менструальная',foll:'🌱 Фолликулярная',ovul:'✨ Овуляторная',lut:'🍂 Лютеиновая'};
+const HI = {
+  mens:'Мягко. Восстановление. Лёгкие задачи.',
+  foll:'Энергия растёт. Новые проекты, съёмки, писать.',
+  ovul:'Пик. Переговоры, презентации, публикации.',
+  lut: 'Завершать. Редактура, детали. Замедляться.'
+};
+
+const GROUPS = [
+  {l:'Тренировки', cats:[
+    {id:'yoga',    lbl:'🧘 Йога',               c:'c-yoga'},
+    {id:'силовая', lbl:'💪 Силовая',             c:'c-move'},
+    {id:'кардио',  lbl:'🏃 Кардио',              c:'c-move'},
+    {id:'растяжка',lbl:'🤸 Растяжка',            c:'c-move'},
+  ]},
+  {l:'Работа — Фото 📷', cats:[
+    {id:'съёмка',  lbl:'📷 Съёмка',              c:'c-meet'},
+    {id:'opencall',lbl:'📣 Open call',            c:'c-promo'},
+    {id:'promo-p', lbl:'🚀 Продвижение (фото)',   c:'c-promo'},
+    {id:'admin',   lbl:'🗂 Админ / Договоры',     c:'c-admin'},
+    {id:'meet-p',  lbl:'🤝 Встреча (фото)',       c:'c-meet'},
+  ]},
+  {l:'Работа — Книга 📖', cats:[
+    {id:'book-w',  lbl:'✍️ Книга — писать',      c:'c-book'},
+    {id:'book-e',  lbl:'📖 Книга — редактура',   c:'c-book'},
+    {id:'promo-b', lbl:'🚀 Продвижение (книга)',  c:'c-promo'},
+    {id:'meet-b',  lbl:'🤝 Встреча (книга)',      c:'c-meet'},
+  ]},
+  {l:'Контент', cats:[
+    {id:'insta',   lbl:'📸 Инста пост',           c:'c-insta'},
+    {id:'tg',      lbl:'✈️ Телеграм пост',        c:'c-tg'},
+    {id:'subst',   lbl:'📝 Сабстак',              c:'c-subst'},
+    {id:'content', lbl:'🎬 Контент мейкинг',      c:'c-content'},
+  ]},
+  {l:'Планирование', cats:[
+    {id:'plan',    lbl:'📋 Планирование недели',  c:'c-plan'},
+    {id:'retro',   lbl:'🔍 Ретро недели',         c:'c-retro'},
+  ]},
+  {l:'Жизнь', cats:[
+    {id:'date',    lbl:'💕 Свидание',             c:'c-date'},
+    {id:'friends', lbl:'👯 Друзья',               c:'c-friends'},
+    {id:'social',  lbl:'🎉 Social event',         c:'c-social'},
+    {id:'family',  lbl:'👨‍👩‍👧 Семья',              c:'c-family'},
+    {id:'kids',    lbl:'👶 Время с ребёнком',     c:'c-kids'},
+    {id:'home',    lbl:'🏠 Домашние дела',        c:'c-home'},
+    {id:'cook',    lbl:'🍳 Готовка',              c:'c-home'},
+    {id:'rest',    lbl:'🌿 Отдых',               c:'c-rest'},
+  ]},
+];
+
+const CM = {};
+GROUPS.forEach(g => g.cats.forEach(c => CM[c.id] = c));
+
+const PROJ_CYCLE = {none:'photo', photo:'book', book:'none'};
+const PROJ_LBL   = {none:'·', photo:'📷', book:'📖'};
+const AUTO_PROJ  = {
+  съёмка:'photo', opencall:'photo', 'promo-p':'photo', admin:'photo', 'meet-p':'photo',
+  'book-w':'book', 'book-e':'book', 'promo-b':'book', 'meet-b':'book'
+};
+
+// Weekly template (0=Вс..6=Сб)
+const WPL = {
+  0: [{id:'yoga'},{id:'растяжка'},{id:'plan'},{id:'tg'}],
+  1: [{id:'yoga'},{id:'силовая'},{id:'insta'},{id:'subst'}],
+  2: [{id:'yoga'},{id:'растяжка'},{id:'tg'}],
+  3: [{id:'yoga'},{id:'силовая'},{id:'opencall'},{id:'promo-p'},{id:'insta'}],
+  4: [{id:'yoga'},{id:'кардио'},{id:'book-w'},{id:'tg'},{id:'date',note:'Вечер 💕'}],
+  5: [{id:'yoga'},{id:'силовая'},{id:'insta'},{id:'retro'}],
+  6: [{id:'rest'}],
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let Y=2026, M=4, curView='month', curWeek=0, mkey=null, drag=null;
+// T[key] = {main:'', tasks:[{id,lbl,note,subs:[{t,done}],done,proj}]}
+// BUF    = [{id,lbl,cat,proj,fromKey,fromDate}]
+let T={}, BUF=[];
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+function loadStorage() { /* data hardcoded below */ }
+
+let saveTimer = null;
+function schedSave() {
+  // show dirty dot immediately
+  const dot = document.getElementById('save-dot');
+  const lbl = document.getElementById('save-lbl');
+  if (dot) dot.classList.add('dirty');
+  if (lbl) lbl.textContent = 'сохранение...';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({T, BUF}));
+    } catch(e) {
+      showToast('⚠️ Ошибка сохранения — localStorage заполнен');
+      return;
+    }
+    if (dot) dot.classList.remove('dirty');
+    if (lbl) lbl.textContent = 'сохранено';
+  }, 600);
+}
+
+// ─── BACKUP ──────────────────────────────────────────────────────────────────
+function exportBackup() {
+  const json = JSON.stringify({T, BUF, exportedAt: new Date().toISOString()}, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = `planner_backup_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();
+  showToast('Резервная копия скачана');
+}
+
+function importBackup(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!d.T) throw new Error('bad format');
+      T   = d.T   || {};
+      BUF = d.BUF || [];
+      schedSave();
+      if (curView==='month') buildMonth();
+      else if (curView==='week') buildWeek();
+      else renderBuffer();
+      updateBalance(); updateBufCount();
+      showToast('Данные загружены из резервной копии');
+    } catch(err) {
+      showToast('⚠️ Ошибка — неверный формат файла');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const cdFn = date => { const d=Math.floor((date-CS)/86400000); return ((d%CL)+CL)%CL+1; };
+const phFn = c => c<=5?'mens':c<=13?'foll':c<=17?'ovul':'lut';
+const dk   = (y,m,d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const esc  = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const autoH = el => { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; };
+const tlbl = t => (t.lbl&&t.lbl.trim()) ? t.lbl.trim() : (CM[t.id]?CM[t.id].lbl:t.id);
+const tcls = t => CM[t.id] ? CM[t.id].c : 'c-custom';
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2500);
+}
+
+function initDay(key, date) {
+  if (T[key] !== undefined) return;
+  const dow=date.getDay(), c=cdFn(date), p=phFn(c);
+  const tpl = WPL[dow] || [];
+  const tasks = tpl.map(t => {
+    let id = t.id;
+    if (id==='book-w') id = (p==='foll'||p==='ovul') ? 'book-w' : 'book-e';
+    return {id, lbl:'', note:t.note||'', subs:[], done:false, proj:AUTO_PROJ[id]||'none'};
+  });
+  // every 2nd Sunday: content making
+  if (dow===0 && Math.ceil(date.getDate()/7)%2===0)
+    tasks.push({id:'content',lbl:'',note:'',subs:[],done:false,proj:'none'});
+  T[key] = {main:'', tasks};
+  schedSave();
+}
+
+// ─── RENDER TASK ─────────────────────────────────────────────────────────────
+function rTask(key, i, t) {
+  const cls=tcls(t), lbl=tlbl(t), proj=t.proj||'none';
+  const subs=t.subs||[];
+  const dc=subs.filter(s=>s.done).length;
+  const ind=subs.length>0?`<span class="sub-ind${dc>0?' has':''}" title="${dc}/${subs.length} подзадач">${dc}/${subs.length}</span>`:'';
+  const hasBody=t.note||(subs.length>0);
+  const bo=hasBody?' open':'';
+  const subsH=subs.map((s,si)=>`
+    <div class="sub-row" id="sr-${key}-${i}-${si}">
+      <input type="checkbox" class="s-chk"${s.done?' checked':''} onchange="tSub('${key}',${i},${si},event)">
+      <input class="s-inp${s.done?' sk':''}" value="${esc(s.t)}" placeholder="Подзадача..."
+        onblur="svSub('${key}',${i},${si},this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();svSub('${key}',${i},${si},this.value);addSub('${key}',${i});}">
+      <button class="s-del" onclick="dSub('${key}',${i},${si},event)">✕</button>
+    </div>`).join('');
+
+  return `<div class="tc ${cls}" id="ch-${key}-${i}" draggable="true"
+      ondragstart="sd('${key}',${i})" ondragend="ed()">
+    <div class="tc-head">
+      <input type="checkbox" class="tc-chk"${t.done?' checked':''} onchange="tTask('${key}',${i},event)">
+      <span class="proj-tag ${proj}" onclick="cycleProj('${key}',${i},event)">${PROJ_LBL[proj]}</span>
+      <span class="tc-lbl${t.done?' sk':''}" id="lbl-${key}-${i}" ondblclick="editLbl('${key}',${i})">${esc(lbl)}</span>
+      ${ind}
+      <button class="tc-exp${bo?' open':''}" onclick="togBody('${key}',${i})">▾</button>
+      <button class="tc-del" onclick="dTask('${key}',${i},event)">✕</button>
+    </div>
+    <div class="tc-body${bo}" id="bd-${key}-${i}">
+      <textarea class="tc-note" rows="1" placeholder="Заметка, детали..."
+        onblur="svNote('${key}',${i},this.value)"
+        oninput="autoH(this)">${esc(t.note||'')}</textarea>
+      <div class="subs" id="sb-${key}-${i}">${subsH}</div>
+      <button class="addsub" onclick="addSub('${key}',${i})">+ подзадача</button>
+      <button class="tobuf"  onclick="sendBuf('${key}',${i},event)">→ в буфер</button>
+    </div>
+  </div>`;
+}
+
+function rDay(key) {
+  const d = T[key];
+  if (!d) return '';
+  return (d.tasks||[]).map((t,i)=>rTask(key,i,t)).join('');
+}
+
+function rfDay(key) {
+  ['dt-','wd-'].forEach(prefix => {
+    const el = document.getElementById(prefix+key);
+    if (el) { el.innerHTML = rDay(key); el.querySelectorAll('textarea').forEach(autoH); }
+  });
+  // update progress bar
+  const prog = document.getElementById('prog-'+key);
+  if (prog && T[key] && T[key].tasks) {
+    const tasks = T[key].tasks;
+    const pct = tasks.length ? Math.round(tasks.filter(t=>t.done).length/tasks.length*100) : 0;
+    prog.style.width = pct + '%';
+  }
+  updateBalance();
+}
+
+// ─── TASK ACTIONS ─────────────────────────────────────────────────────────────
+function gT(key,i){ return T[key]&&T[key].tasks&&T[key].tasks[i]; }
+
+function tTask(key,i,e) {
+  e.stopPropagation();
+  if (!gT(key,i)) return;
+  T[key].tasks[i].done = !T[key].tasks[i].done;
+  schedSave(); rfDay(key);
+}
+function dTask(key,i,e) {
+  e.stopPropagation();
+  if (!T[key]) return;
+  T[key].tasks.splice(i,1);
+  schedSave(); rfDay(key);
+}
+function svNote(key,i,v) {
+  if (!gT(key,i)) return;
+  T[key].tasks[i].note=v; schedSave();
+}
+function togBody(key,i) {
+  const bd=document.getElementById('bd-'+key+'-'+i);
+  const btn=bd&&bd.previousElementSibling&&bd.previousElementSibling.querySelector('.tc-exp');
+  if (!bd) return;
+  const o=bd.classList.toggle('open');
+  if (btn) btn.classList.toggle('open',o);
+  if (o) bd.querySelectorAll('textarea').forEach(autoH);
+}
+
+// Edit label in place (double click)
+function editLbl(key,i) {
+  const el=document.getElementById(`lbl-${key}-${i}`);
+  if (!el) return;
+  const cur=tlbl(T[key].tasks[i]);
+  el.outerHTML=`<input class="tc-lbl-inp" id="lbl-${key}-${i}" value="${esc(cur)}"
+    onblur="saveLbl('${key}',${i},this.value)"
+    onkeydown="if(event.key==='Enter')this.blur();">`;
+  setTimeout(()=>{ const inp=document.getElementById(`lbl-${key}-${i}`); if(inp)inp.focus(); },10);
+}
+function saveLbl(key,i,v) {
+  if (!gT(key,i)) return;
+  T[key].tasks[i].lbl=v.trim(); schedSave();
+  const inp=document.getElementById(`lbl-${key}-${i}`);
+  if (inp) inp.outerHTML=`<span class="tc-lbl${T[key].tasks[i].done?' sk':''}"
+    id="lbl-${key}-${i}" ondblclick="editLbl('${key}',${i})">${esc(tlbl(T[key].tasks[i]))}</span>`;
+}
+
+// Project cycling (click on tag)
+function cycleProj(key,i,e) {
+  e.stopPropagation();
+  if (!gT(key,i)) return;
+  const cur=T[key].tasks[i].proj||'none';
+  T[key].tasks[i].proj=PROJ_CYCLE[cur];
+  schedSave();
+  const ch=document.getElementById(`ch-${key}-${i}`);
+  if (ch) { const tag=ch.querySelector('.proj-tag'); if(tag){tag.className=`proj-tag ${T[key].tasks[i].proj}`;tag.textContent=PROJ_LBL[T[key].tasks[i].proj];} }
+  updateBalance();
+}
+
+// Main task of day
+function saveMain(key,v) {
+  if (!T[key]) return;
+  T[key].main=v; schedSave();
+  // highlight day if main task filled
+  const dt=document.getElementById('dt-'+key);
+  const dayEl=dt&&dt.closest('.day');
+  if (dayEl) dayEl.classList.toggle('main-done', !!v.trim());
+}
+
+// Buffer
+function sendBuf(key,i,e) {
+  e.stopPropagation();
+  if (!gT(key,i)) return;
+  const t=T[key].tasks[i];
+  const parts=key.split('-');
+  BUF.push({id:t.id, lbl:tlbl(t), cat:tcls(t), proj:t.proj||'none',
+    fromKey:key, fromDate:`${+parts[2]} ${MN[+parts[1]-1]}`});
+  T[key].tasks.splice(i,1);
+  schedSave(); rfDay(key); updateBufCount();
+}
+function updateBufCount() {
+  const el=document.getElementById('buf-cnt');
+  if (el) el.textContent=BUF.length;
+  if (curView==='buffer') renderBuffer();
+}
+function renderBuffer() {
+  const list=document.getElementById('buf-list');
+  if (!list) return;
+  if (!BUF.length) { list.innerHTML='<div class="buf-empty">Буфер пуст — всё сделано 🎉</div>'; return; }
+  list.innerHTML=BUF.map((b,bi)=>`
+    <div class="buf-item">
+      <span class="buf-proj">${PROJ_LBL[b.proj]}</span>
+      <span class="buf-lbl">${esc(b.lbl)}</span>
+      <span class="buf-from">из ${b.fromDate}</span>
+      <button class="buf-assign" onclick="assignBuf(${bi})">→ в день</button>
+      <button class="buf-del"    onclick="delBuf(${bi})">✕</button>
+    </div>`).join('');
+}
+function assignBuf(bi) {
+  const day=prompt(`Перенести "${BUF[bi].lbl}" на какое число?`,'');
+  if (!day) return;
+  const d=parseInt(day);
+  if (isNaN(d)||d<1||d>31) { showToast('Неверное число'); return; }
+  const key=dk(Y,M,d);
+  if (!T[key]) T[key]={main:'',tasks:[]};
+  const b=BUF[bi];
+  T[key].tasks.push({id:b.id,lbl:b.lbl,note:'',subs:[],done:false,proj:b.proj});
+  BUF.splice(bi,1);
+  schedSave(); updateBufCount(); rfDay(key);
+  showToast(`Задача добавлена на ${d} ${MN[M]}`);
+}
+function delBuf(bi) { BUF.splice(bi,1); schedSave(); updateBufCount(); }
+
+// Subtasks
+function addSub(key,i) {
+  if (!gT(key,i)) return;
+  if (!T[key].tasks[i].subs) T[key].tasks[i].subs=[];
+  T[key].tasks[i].subs.push({t:'',done:false});
+  schedSave(); rfDay(key);
+  const bd=document.getElementById('bd-'+key+'-'+i);
+  if (bd&&!bd.classList.contains('open')) { bd.classList.add('open'); const btn=bd.previousElementSibling&&bd.previousElementSibling.querySelector('.tc-exp'); if(btn)btn.classList.add('open'); }
+  setTimeout(()=>{ const c=document.getElementById('sb-'+key+'-'+i); if(c){const ins=c.querySelectorAll('.s-inp');if(ins.length)ins[ins.length-1].focus();} },40);
+}
+function svSub(key,i,si,v) { if(!gT(key,i)||!T[key].tasks[i].subs)return; T[key].tasks[i].subs[si].t=v; schedSave(); }
+function tSub(key,i,si,e) {
+  e.stopPropagation();
+  if (!gT(key,i)||!T[key].tasks[i].subs) return;
+  T[key].tasks[i].subs[si].done=!T[key].tasks[i].subs[si].done;
+  schedSave();
+  const inp=document.querySelector(`#sr-${key}-${i}-${si} .s-inp`);
+  if (inp) inp.classList.toggle('sk', T[key].tasks[i].subs[si].done);
+  // update sub indicator
+  const ind=document.querySelector(`#ch-${key}-${i} .sub-ind`);
+  if (ind) { const subs=T[key].tasks[i].subs; const dc=subs.filter(s=>s.done).length; ind.textContent=`${dc}/${subs.length}`; ind.classList.toggle('has',dc>0); }
+}
+function dSub(key,i,si,e) { e.stopPropagation(); if(!gT(key,i)||!T[key].tasks[i].subs)return; T[key].tasks[i].subs.splice(si,1); schedSave(); rfDay(key); }
+
+// ─── DRAG ─────────────────────────────────────────────────────────────────────
+function sd(key,i) { drag={key,i}; requestAnimationFrame(()=>{ const e=document.getElementById(`ch-${key}-${i}`); if(e)e.classList.add('dragging'); }); }
+function ed() { if(drag){const e=document.getElementById(`ch-${drag.key}-${drag.i}`); if(e)e.classList.remove('dragging');} drag=null; }
+function drop(toKey) {
+  if (!drag) return;
+  const {key:fk,i}=drag;
+  if (!T[fk]) return;
+  const t=T[fk].tasks.splice(i,1)[0];
+  if (!T[toKey]) T[toKey]={main:'',tasks:[]};
+  T[toKey].tasks.push(t);
+  schedSave(); rfDay(fk); rfDay(toKey);
+}
+function dsDrop(el,key) {
+  el.addEventListener('dragover', e=>{e.preventDefault();el.classList.add('dov');});
+  el.addEventListener('dragleave',()=>el.classList.remove('dov'));
+  el.addEventListener('drop', e=>{e.preventDefault();el.classList.remove('dov');drop(key);});
+}
+
+// ─── BALANCE ──────────────────────────────────────────────────────────────────
+function updateBalance() {
+  let p=0,b=0;
+  Object.values(T).forEach(day=>{
+    if (!day||!day.tasks) return;
+    day.tasks.forEach(t=>{ if(t.proj==='photo')p++; else if(t.proj==='book')b++; });
+  });
+  document.getElementById('bal-p').textContent=p;
+  document.getElementById('bal-b').textContent=b;
+  const tot=p+b||1;
+  document.getElementById('bal-fill').style.width=Math.round(p/tot*100)+'%';
+}
+
+
+const DAY_ROLES = {
+  0: {even:'📋 Планирование', odd:'🎬 Контент-день', cls:'role-content'},
+  1: {both:'📖 Книга', cls:'role-book'},
+  2: {both:'📷 Фото', cls:'role-photo'},
+  3: {even:'📣 Open call', odd:'🚀 Продв. книги', cls:'role-open'},
+  4: {both:'🤝 Встречи + Админ', cls:'role-admin'},
+  5: {both:'🌿 Лёгкий день', cls:'role-rest'},
+  6: {both:'🌿 Отдых', cls:'role-rest'},
+};
+function getDayRole(dow, weekNum) {
+  const r = DAY_ROLES[dow];
+  if (!r) return {lbl:'', cls:''};
+  const even = weekNum % 2 === 0;
+  const lbl = r.both || (even ? r.even : r.odd);
+  return {lbl, cls: r.cls || ''};
+}
+
+// ─── BUILD MONTH ──────────────────────────────────────────────────────────────
+function buildMonth() {
+  const g=document.getElementById('mgrid'); g.innerHTML='';
+  const days=new Date(Y,M+1,0).getDate(), first=new Date(Y,M,1).getDay();
+  const tod=new Date(); tod.setHours(0,0,0,0);
+  let sl=[]; for(let i=0;i<first;i++)sl.push(null); for(let d=1;d<=days;d++)sl.push(d); while(sl.length%7)sl.push(null);
+
+  for (let w=0;w<sl.length;w+=7) {
+    const row=document.createElement('div'); row.className='wrow';
+    for (let i=0;i<7;i++) {
+      const d=sl[w+i], cell=document.createElement('div');
+      if (!d) { cell.className='day empty'; row.appendChild(cell); continue; }
+      const date=new Date(Y,M,d), c=cdFn(date), p=phFn(c);
+      const isT=date.getTime()===tod.getTime(), key=dk(Y,M,d);
+      initDay(key,date);
+      cell.className=`day phase-${p}${isT?' today':''}`;
+      dsDrop(cell,key);
+      const dayData=T[key]||{main:'',tasks:[]};
+      const mainVal=esc(dayData.main||'');
+      const mainDone=dayData.main&&dayData.main.trim()?'main-done':'';
+      if (mainDone) cell.classList.add('main-done');
+      const wn=Math.ceil(d/7);
+      const role=getDayRole(date.getDay(),wn);
+      const tasks=dayData.tasks||[];
+      const doneN=tasks.filter(t=>t.done).length;
+      const pct=tasks.length?Math.round(doneN/tasks.length*100):0;
+      cell.innerHTML=`
+        <div class="dtop"><span class="dnum">${d}</span><span class="dcd">д.${c}</span></div>
+        ${role.lbl?`<span class="day-role ${role.cls}">${role.lbl}</span>`:''}
+        <div class="dtasks" id="dt-${key}">${rDay(key)}</div>
+        <button class="addbtn" onclick="openM('${key}')">+ задача</button>
+        <div class="day-prog"><div class="day-prog-fill" id="prog-${key}" style="width:${pct}%"></div></div>`;
+      row.appendChild(cell);
+    }
+    g.appendChild(row);
+  }
+  setPl(`${MN[M]} ${Y}`);
+  document.querySelectorAll('textarea.tc-note').forEach(autoH);
+  updateBalance(); updateBufCount();
+}
+
+// ─── BUILD WEEK ───────────────────────────────────────────────────────────────
+function buildWeek() {
+  const v=document.getElementById('wv'); v.innerHTML='';
+  const days=new Date(Y,M+1,0).getDate(), first=new Date(Y,M,1).getDay();
+  const tod=new Date(); tod.setHours(0,0,0,0);
+  let sl=[]; for(let i=0;i<first;i++)sl.push(null); for(let d=1;d<=days;d++)sl.push(d); while(sl.length%7)sl.push(null);
+  const weeks=[]; for(let w=0;w<sl.length;w+=7) weeks.push(sl.slice(w,w+7));
+  if(curWeek>=weeks.length)curWeek=weeks.length-1; if(curWeek<0)curWeek=0;
+  const wk=weeks[curWeek];
+
+  const nav=document.createElement('div');
+  nav.style.cssText='font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;';
+  nav.textContent=`Неделя ${curWeek+1} из ${weeks.length}`;
+  v.appendChild(nav);
+
+  const hg=document.createElement('div'); hg.className='wgrid';
+  const cg=document.createElement('div'); cg.className='wgrid'; cg.style.marginTop='3px';
+
+  wk.forEach(d=>{
+    const hc=document.createElement('div');
+    if (!d) { hc.innerHTML=''; hg.appendChild(hc); const ec=document.createElement('div'); ec.style.minHeight='150px'; cg.appendChild(ec); return; }
+    const date=new Date(Y,M,d), c=cdFn(date), p=phFn(c), isT=date.getTime()===tod.getTime();
+    hc.className=`wh phase-${p}${isT?' today':''}`;
+    hc.innerHTML=`<div class="wh-dow">${DW[date.getDay()]}</div><div class="wh-num">${d}</div><div class="wh-cd">день ${c}</div>`;
+    hg.appendChild(hc);
+    const key=dk(Y,M,d); initDay(key,date);
+    const col=document.createElement('div'); col.className='wcol';
+    const ta=document.createElement('div'); ta.className='wtasks'; ta.id='wd-'+key; ta.style.minHeight='150px';
+    ta.innerHTML=rDay(key); dsDrop(ta,key);
+    const ab=document.createElement('button'); ab.className='addbtn'; ab.style.cssText='opacity:.5;display:block;margin-top:3px;'; ab.textContent='+ задача'; ab.onclick=()=>openM(key);
+    col.appendChild(ta); col.appendChild(ab); cg.appendChild(col);
+  });
+  v.appendChild(hg); v.appendChild(cg);
+  const fr=wk.find(d=>d), lr=[...wk].reverse().find(d=>d);
+  if(fr&&lr) setPl(`${fr}–${lr} ${MN[M]}`);
+  v.querySelectorAll('textarea.tc-note').forEach(autoH);
+  updateBalance();
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function openM(key) {
+  mkey=key;
+  const p=key.split('-'), date=new Date(+p[0],+p[1]-1,+p[2]);
+  const c=cdFn(date), ph=phFn(c);
+  document.getElementById('mt').textContent=`${+p[2]} ${MN[+p[1]-1]}`;
+  document.getElementById('ms').textContent=`${PN[ph]} · День цикла ${c}`;
+  document.getElementById('mb').innerHTML=
+    GROUPS.map(g=>`<div><div class="ml">${g.l}</div>
+      <div class="chips">${g.cats.map(c=>`<div class="chip ${c.c}" data-id="${c.id}" onclick="this.classList.toggle('sel')">${c.lbl}</div>`).join('')}</div></div>`).join('')+
+    `<div><div class="ml">Своя задача</div><input class="cinp" id="ci" placeholder="Название..."></div>
+     <div class="hint">${HI[ph]}</div>`;
+  document.getElementById('ov').classList.add('open');
+}
+function saveModal() {
+  if (!mkey) return;
+  if (!T[mkey]) T[mkey]={main:'',tasks:[]};
+  document.querySelectorAll('#mb .chip.sel').forEach(c=>{
+    T[mkey].tasks.push({id:c.dataset.id, lbl:'', note:'', subs:[], done:false, proj:AUTO_PROJ[c.dataset.id]||'none'});
+  });
+  const cv=document.getElementById('ci').value.trim();
+  if (cv) T[mkey].tasks.push({id:'custom',lbl:cv,note:'',subs:[],done:false,proj:'none'});
+  schedSave(); rfDay(mkey); closeModal();
+}
+function closeModal() { document.getElementById('ov').classList.remove('open'); mkey=null; }
+
+// ─── VIEW / NAV ───────────────────────────────────────────────────────────────
+function setView(v) {
+  curView=v;
+  ['month','week','buffer'].forEach(x=>{
+    document.getElementById(`vb-${x}`).classList.toggle('active',v===x);
+  });
+  document.getElementById('mv').classList.toggle('hidden',v!=='month');
+  document.getElementById('wv').classList.toggle('active',v==='week');
+  document.getElementById('bfv').classList.toggle('active',v==='buffer');
+  if(v==='month') buildMonth();
+  else if(v==='week') buildWeek();
+  else renderBuffer();
+}
+function nav(dir) {
+  if (curView==='month') {
+    M+=dir; if(M>11){M=0;Y++;} if(M<0){M=11;Y--;} buildMonth();
+  } else if (curView==='week') {
+    const days=new Date(Y,M+1,0).getDate(),first=new Date(Y,M,1).getDay();
+    const tot=Math.ceil((first+days)/7);
+    curWeek=Math.max(0,Math.min(tot-1,curWeek+dir)); buildWeek();
+  }
+}
+function setPl(t) { document.getElementById('plbl').textContent=t; }
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+
+// ── PRESET DATA (historical + april plan) ────────────────────────────────────
+function loadPresetData() {
+  const preset = {
+  '2026-04-02': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🏃 Кардио',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📖 Книга — редактура',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'💕 Свидание — Вечер 💕',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-09': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🏃 Кардио',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✍️ Книга — писать',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'💕 Свидание — Вечер 💕',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-12': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🤸 Растяжка',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📋 Планирование недели',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-13': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'💪 Силовая',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'📸 Инста пост',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-14': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🤸 Растяжка',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-15': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'💪 Силовая',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🚀 Продвижение (фото) — post Bellaviv',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'📸 Инста пост',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'📣 Open call / Гранты',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-16': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🏃 Кардио',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'✍️ Книга — писать',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'pedicure 12.00',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-17': [{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🔍 Ретро недели',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'💕 Свидание — Вечер 💕',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'👯 Друзья',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🌿 Отдых',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-18': [{id:'custom',lbl:'👯 Друзья',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'💪 Силовая',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'🧘 Йога',note:'',subs:[],done:true,proj:'none'}],
+  '2026-04-19': [{id:'custom',lbl:'🏥 Поликлиника с ребёнком (8:00)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📋 Записаться: лазер + косметолог + врачи',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🎬 Снимаю себя — репортажное промо',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'📸 Сторис: объявить что снимаю события',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на пн — конкретный фрагмент редактуры',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-20': [{id:'custom',lbl:'📖 Книга — редактура (конкретный фрагмент)',note:'',subs:[],done:false,proj:'book'},{id:'custom',lbl:'📸 Инста пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📝 Сабстак — набросок',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на вт — съёмка или список контактов',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-21': [{id:'custom',lbl:'✂️ Стрижка (11:15)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🤝 Встреча (16:00)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🎂 Поздравить Али с днём рождения!',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📷 Съёмка себя (личное продвижение)',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'📷 Обработка + сбор серий',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на ср — GRIP (Camera Austria)',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-22': [{id:'custom',lbl:'🔥 Барбекю с друзьями — выходной',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'⚡ GRIP дедлайн 30 апр — если есть 30 мин: набросок statement',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-23': [{id:'custom',lbl:'🤝 Встречи и питчи (10:00–12:30)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🗂 Список 10 контактов: продюсеры, PR, организаторы ТА',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'💕 Свидание вечером',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-24': [{id:'custom',lbl:'📸 Инста пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🔍 Ретро недели (15 мин)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📚 Вдохновение — книга / референсы (30 мин)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✉️ Отправить 3 письма из списка контактов репортажки',note:'',subs:[],done:false,proj:'photo'}],
+  '2026-04-25': [{id:'custom',lbl:'🌿 Отдых — полный',note:'',subs:[],done:true,proj:'none'},{id:'custom',lbl:'💰 Финансовое планирование (вечер)',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-26': [{id:'custom',lbl:'📋 Планирование на 2 недели вперёд',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🔍 Ретро прошедших 2 недель (30 мин)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: сформулировать задачи на каждый день недели',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-27': [{id:'custom',lbl:'📖 Книга — редактура (завершать, детали)',note:'',subs:[],done:false,proj:'book'},{id:'custom',lbl:'📸 Инста пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'📝 Сабстак',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'💰 Bills',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на вт — питч Зелински',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-28': [{id:'custom',lbl:'📷 Фото — продающий сторителлинг',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'✉️ Написать питч для Зелински (1 стр)',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🦷 Dentist',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на ср — продвижение книги',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-29': [{id:'custom',lbl:'🚀 Продвижение книги — питчи, письма',note:'',subs:[],done:false,proj:'book'},{id:'custom',lbl:'✉️ Письмо-знакомство в המקרר',note:'info@hamecarer.co.il',subs:[],done:false,proj:'book'},{id:'custom',lbl:'📸 Инста (продажа)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🌙 Ритуал: задача на чт — followup контакты',note:'',subs:[],done:false,proj:'none'}],
+  '2026-04-30': [{id:'custom',lbl:'🤝 Встречи и питчи (10:00–12:30)',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'🗂 Followup — кто не ответил на письма от 24 апр',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✉️ Отправить питч Зелински',note:'',subs:[],done:false,proj:'photo'},{id:'custom',lbl:'📬 ⚡ Отправить заявку GRIP — последний день!',note:'magazine@camera-austria.at',subs:[],done:false,proj:'none'},{id:'custom',lbl:'✈️ Телеграм пост',note:'',subs:[],done:false,proj:'none'},{id:'custom',lbl:'💕 Свидание вечером',note:'',subs:[],done:false,proj:'none'}]
+};
+  Object.entries(preset).forEach(([key, tasks]) => {
+    if (!T[key]) {
+      T[key] = {main:'', tasks};
+    } else {
+      // merge: add preset tasks that aren't already there
+      tasks.forEach(pt => {
+        if (!T[key].tasks.some(et => et.lbl === pt.lbl)) {
+          T[key].tasks.push(pt);
+        }
+      });
+    }
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Data hardcoded — no localStorage dependency
+const PRESET_T = {"2026-04-02": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📖 Книга — редактура", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание — Вечер 💕", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-09": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✍️ Книга — писать", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание — Вечер 💕", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-12": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📋 Планирование недели", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-13": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-14": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-15": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🚀 Продвижение (фото) — post Bellaviv", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📣 Open call / Гранты", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-16": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "✍️ Книга — писать", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "pedicure 12.00", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-17": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание — Вечер 💕", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "👯 Друзья", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-18": {"main": "", "tasks": [{"id": "custom", "lbl": "👯 Друзья", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-19": {"main": "", "tasks": [{"id": "custom", "lbl": "🏥 Поликлиника с ребёнком (8:00)", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🎬 Снимаю себя — репортажное промо", "note": "", "subs": [], "done": true, "proj": "photo"}, {"id": "custom", "lbl": "📸 Сторис: объявить что снимаю события", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "отдать фото клиенту", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "content", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "tg", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📋 Планирование на 2 недели вперёд", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на пн — конкретный фрагмент редактуры", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📷 Обработка + сбор серий", "note": "", "subs": [], "done": true, "proj": "photo"}]}, "2026-04-20": {"main": "", "tasks": [{"id": "custom", "lbl": "📖 Книга — редактура (Тело))", "note": "", "subs": [], "done": true, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак — набросок", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "tg", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "book-w", "lbl": "", "note": "", "subs": [], "done": true, "proj": "book"}, {"id": "custom", "lbl": "подготовка к встрече", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на вт — съёмка или список контактов", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-21": {"main": "", "tasks": [{"id": "custom", "lbl": "✂️ Стрижка (11:15)", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🎂 Поздравить Али с днём рождения!", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "стори беременные", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на ср — GRIP (Camera Austria)", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-22": {"main": "", "tasks": [{"id": "custom", "lbl": "🔥 Барбекю с друзьями — выходной", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "⚡ GRIP дедлайн 30 апр — если есть 30 мин: набросок statement", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Съёмка себя (личное продвижение)", "note": "", "subs": [], "done": true, "proj": "photo"}, {"id": "promo-b", "lbl": "", "note": "", "subs": [], "done": true, "proj": "book"}]}, "2026-04-23": {"main": "", "tasks": [{"id": "custom", "lbl": "🗂 Список 10 контактов: продюсеры, PR, организаторы ТА", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "кардио", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "insta", "lbl": "📸 Инста рил", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "съёмка", "lbl": "📷 Съёмка 14.00 - 18.30", "note": "", "subs": [], "done": false, "proj": "photo"}]}, "2026-04-24": {"main": "", "tasks": [{"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Отправить 3 письма из списка контактов репортажки", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "📋 Записаться: лазер + косметолог + врачи", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-25": {"main": "", "tasks": [{"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💰 Финансовое планирование (вечер)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-26": {"main": "", "tasks": [{"id": "custom", "lbl": "🔍 Ретро прошедших 2 недель (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: сформулировать задачи на каждый день недели", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "friends", "lbl": "Алена 18-19.00", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "plan", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "content", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-27": {"main": "", "tasks": [{"id": "custom", "lbl": "📖 Книга — редактура (завершать, детали)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💰 Bills", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на вт — питч Зелински", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "урок по фотографии 10.00", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "meet-b", "lbl": "🤝 Встреча (книга) 14.30 Marin)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}]}, "2026-04-28": {"main": "", "tasks": [{"id": "custom", "lbl": "📷 Фото — продающий сторителлинг", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✉️ Написать питч для Зелински (1 стр)", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🦷 Dentist", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на ср — продвижение книги", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "кардио", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "meet-b", "lbl": "", "note": "", "subs": [], "done": true, "proj": "book"}]}, "2026-04-29": {"main": "", "tasks": [{"id": "custom", "lbl": "🚀 Продвижение книги — питчи, письма", "note": "", "subs": [], "done": true, "proj": "book"}, {"id": "custom", "lbl": "✉️ Письмо-знакомство в המקרר", "note": "info@hamecarer.co.il", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста (продажа)", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🌙 Ритуал: задача на чт — followup контакты", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "🤝 Встречи и питчи (10:00–12:30)", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "кардио", "lbl": "", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "meet-b", "lbl": "", "note": "", "subs": [], "done": true, "proj": "book"}]}, "2026-04-30": {"main": "", "tasks": [{"id": "custom", "lbl": "🗂 Followup — кто не ответил на письма от 24 апр", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Отправить питч Зелински", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "📬 ⚡ Отправить заявку GRIP — последний день!", "note": "magazine@camera-austria.at", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": true, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание вечером", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-01": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "opencall", "lbl": "", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "promo-p", "lbl": "", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-03": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "retro", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-04": {"main": "", "tasks": [{"id": "rest", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-05": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "plan", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "tg", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-06": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "subst", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-07": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "растяжка", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "tg", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-08": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "opencall", "lbl": "", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "promo-p", "lbl": "", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-10": {"main": "", "tasks": [{"id": "yoga", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "силовая", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "insta", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "retro", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-04-11": {"main": "", "tasks": [{"id": "rest", "lbl": "", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-01": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔄 Хвосты недели — одна незакрытая задача", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📖 Книга — редактура (хвост апреля)", "note": "", "subs": [], "done": false, "proj": "book"}]}, "2026-05-02": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-03": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🎬 Контент-день: снимаю себя", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Пул постов Инста", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🧵 Пул постов Threads", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏥 Семейный врач (09:50)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-04": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📖 Книга — редактура (конкретный фрагмент)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🦷 Чистка зубов (14:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-05": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Съёмка себя (личное продвижение)", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "📷 Обработка + сбор серий", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🦷 Зубной (13:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-06": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🚀 Продвижение книги — питчи, письма", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста (продажа)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Список 10 контактов: продюсеры, PR, организаторы ТА", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-07": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤝 Встречи и питчи (10:00–12:30)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Админ блок — счета, договоры, письма (12:30–14:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание вечером", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "👁 Окулист (11:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Написать питч для Зелински (1 стр)", "note": "", "subs": [], "done": false, "proj": "photo"}]}, "2026-05-08": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔄 Хвосты недели — одна незакрытая задача", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Отправить 3 письма из списка контактов репортажки", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-09": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💰 Финансовое планирование (вечер)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-10": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📋 Планирование на 2 недели вперёд", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро прошедших 2 недель (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-11": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✍️ Книга — писать (конкретный фрагмент)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📋 Записаться: лазер + косметолог + врачи", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-12": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Фото — продающий сторителлинг", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "📷 Обработка + сбор серий", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Фото — продающий сторителлинг (хвост апреля)", "note": "", "subs": [], "done": false, "proj": "photo"}]}, "2026-05-13": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📣 Open call / Гранты — найти, написать, отправить", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста (продажа)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-14": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤝 Встречи и питчи (10:00–12:30)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Админ блок — счета, договоры, письма (12:30–14:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание вечером", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Письмо-знакомство в המקרר (info@hamecarer.co.il)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-15": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔄 Хвосты недели — одна незакрытая задача", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-16": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-17": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🎬 Контент-день: снимаю себя", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Пул постов Инста", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🧵 Пул постов Threads", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-18": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📖 Книга — редактура (конкретный фрагмент)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-19": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Съёмка себя (личное продвижение)", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "📷 Обработка + сбор серий", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-20": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🚀 Продвижение книги — питчи, письма", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста (продажа)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Followup — кто не ответил на письма (контакты репортажки)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-21": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤝 Встречи и питчи (10:00–12:30)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Админ блок — счета, договоры, письма (12:30–14:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание вечером", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✉️ Followup Зелински — если не ответил", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-22": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔄 Хвосты недели — одна незакрытая задача", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💰 Bills", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-23": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💰 Финансовое планирование (вечер)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-24": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📋 Планирование на 2 недели вперёд", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро прошедших 2 недель (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-25": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📖 Книга — редактура (конкретный фрагмент)", "note": "", "subs": [], "done": false, "proj": "book"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📝 Сабстак", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-26": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📷 Фото — продающий сторителлинг", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "📷 Обработка + сбор серий", "note": "", "subs": [], "done": false, "proj": "photo"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-27": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📣 Open call / Гранты — найти, написать, отправить", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста (продажа)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-28": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🏃 Кардио", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤝 Встречи и питчи (10:00–12:30)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🗂 Админ блок — счета, договоры, письма (12:30–14:00)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💕 Свидание вечером", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-29": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "💪 Силовая", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Инста пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔍 Ретро недели (15 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📚 Вдохновение — книга / референсы (30 мин)", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🔄 Хвосты недели — одна незакрытая задача", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-30": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌿 Отдых — полный", "note": "", "subs": [], "done": false, "proj": "none"}]}, "2026-05-31": {"main": "", "tasks": [{"id": "custom", "lbl": "🧘 Йога", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🤸 Растяжка", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🎬 Контент-день: снимаю себя", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "📸 Пул постов Инста", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🧵 Пул постов Threads", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "✈️ Телеграм пост", "note": "", "subs": [], "done": false, "proj": "none"}, {"id": "custom", "lbl": "🌙 Вечерний ритуал — порядок + задача на завтра (19:00)", "note": "", "subs": [], "done": false, "proj": "none"}]}};
+
+// Load: preset is base, then merge any localStorage edits on top
+function loadAll() {
+  // Start with preset
+  T = JSON.parse(JSON.stringify(PRESET_T));
+  BUF = [];
+  // Then apply any user edits from localStorage (done states, added tasks)
+  try {
+    const raw = localStorage.getItem('planner_2026');
+    if (raw) {
+      const saved = JSON.parse(raw);
+      const savedT = saved.T || {};
+      Object.entries(savedT).forEach(([key, savedDay]) => {
+        if (!T[key]) { T[key] = savedDay; return; }
+        const savedTasks = savedDay.tasks || [];
+        // Apply done states
+        T[key].tasks.forEach(t => {
+          const s = savedTasks.find(x => x.lbl === t.lbl);
+          if (s) t.done = s.done;
+        });
+        // Add user-added tasks
+        savedTasks.forEach(s => {
+          if (!T[key].tasks.some(t => t.lbl === s.lbl)) T[key].tasks.push(s);
+        });
+      });
+      BUF = saved.BUF || [];
+    }
+  } catch(e) {}
+}
+
+// Override schedSave to use new key
+function schedSave() {
+  clearTimeout(saveTimer);
+  const dot = document.getElementById('save-dot');
+  const lbl = document.getElementById('save-lbl');
+  if (dot) dot.classList.add('dirty');
+  if (lbl) lbl.textContent = 'сохранение...';
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem('planner_2026', JSON.stringify({T, BUF})); }
+    catch(e) { showToast('⚠️ Ошибка сохранения'); return; }
+    if (dot) dot.classList.remove('dirty');
+    if (lbl) lbl.textContent = 'сохранено';
+  }, 600);
+}
+
+loadAll();
+buildMonth();
+</script>
